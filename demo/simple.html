@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>SimVPv2 - ONNX Runtime Web</title>
+</head>
+<body>
+  
+  <p>See browser console for more results.</p>
+  <button onclick="start(); this.disabled=true;">start</button>
+  <p><a href="#">github repo</a> - <a href="https://huggingface.co/rocca/simvp-web">huggingface repo</a></p>
+  
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.13.1/dist/ort.js"></script>
+  <script>
+    async function start() {
+      // let inputData = new Float32Array(1*10*1*64*64).fill(0);
+      let exampleData = await fetch("https://huggingface.co/rocca/simvp-web/resolve/main/onnx/moving_mnist/input_output_data.json").then(r => r.json());
+      let inputData = exampleData.input.flat().flat().flat().flat().flat().flat();
+      console.log("Input data:", inputData);
+      
+      console.log("Initializing...");
+      let model = await ort.InferenceSession.create(`https://huggingface.co/rocca/simvp-web/resolve/main/onnx/moving_mnist/epoch-137-quantized.onnx`, { executionProviders: ["wasm"] });
+      
+      console.log("Starting inference...");
+      let startTime = Date.now();
+      let results = await model.run({"input": new ort.Tensor('float32', inputData, [1,10,1,64,64])});
+      let output = results["output"]; // float32[1,10,1,64,64]
+      console.log(`Inference took ${Date.now()-startTime}ms`);
+      
+      window.pytorch = exampleData.pytorch_prediction.flat().flat().flat().flat().flat();
+      window.onnx = [...output.data];
+      window.groundTruth = exampleData.ground_truth.flat().flat().flat().flat().flat();
+      
+      console.log("Predicted:", window.onnx);
+      console.log("PyTorch:", window.pytorch);
+      console.log("Ground truth:", window.groundTruth);
+
+      console.log("Values > 0.1:");
+      console.log("Predicted:", window.onnx.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      console.log("Pytorch:", window.pytorch.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      console.log("Ground truth:", window.groundTruth.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+    }
+  </script>
+</body>
+</html>
