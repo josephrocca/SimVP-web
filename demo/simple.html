@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>SimVPv2 - ONNX Runtime Web</title>
+  <script src="./enable-threads.js"></script>
 </head>
 <body>
   
@@ -13,6 +14,10 @@
   
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.13.1/dist/ort.js"></script>
   <script>
+    if(self.crossOriginIsolated) { // needs to be cross-origin-isolated to use wasm threads. you need to serve this html file with these two headers: https://web.dev/coop-coep/
+      ort.env.wasm.numThreads = navigator.hardwareConcurrency
+    }
+    
     async function start() {
       // let inputData = new Float32Array(1*10*1*64*64).fill(0);
       let exampleData = await fetch("https://huggingface.co/rocca/simvp-web/resolve/main/onnx/moving_mnist/input_output_data.json").then(r => r.json());
