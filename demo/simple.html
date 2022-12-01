@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.13.1/dist/ort.js"></script>
   <script>
     if(self.crossOriginIsolated) { // needs to be cross-origin-isolated to use wasm threads. you need to serve this html file with these two headers: https://web.dev/coop-coep/
-      ort.env.wasm.numThreads = navigator.hardwareConcurrency
+      ort.env.wasm.numThreads = navigator.hardwareConcurrency / 2;
     }
     
     async function start() {
