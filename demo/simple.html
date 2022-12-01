@@ -7,7 +7,7 @@
 </head>
 <body>
   
-  <p>See browser console for more results.</p>
+  <p>Blue = input frames, green = output/predicted frames. See browser console for more data.</p>
   <button onclick="start(); this.disabled=true;">start</button>
   <p><a href="https://github.com/josephrocca/SimVP-web">github repo</a> - <a href="https://huggingface.co/rocca/simvp-web">huggingface repo</a></p>
   
@@ -28,31 +28,42 @@
       let output = results["output"]; // float32[1,10,1,64,64]
       console.log(`Inference took ${Date.now()-startTime}ms`);
       
-      let frames = [];
-      let data = [...output.data];
-      for(let i = 0; i < 10; i++) {
-        frames.push(data.slice(i*64*64, (i+1)*64*64));
-      }
-      console.log(frames);
-
-      for(let frame of frames) {
-        let rgba = frame.map(n => [Math.round(n*255), Math.round(n*255), Math.round(n*255), 255]);
-        let canvas = createCanvasFromRGBAData(rgba, 64, 64);
-        document.body.appendChild(canvas);
-      }
+      let pytorch = exampleData.pytorch_prediction.flat().flat().flat().flat().flat();
+      let onnx = [...output.data];
+      let groundTruth = exampleData.ground_truth.flat().flat().flat().flat().flat();
       
-      window.pytorch = exampleData.pytorch_prediction.flat().flat().flat().flat().flat();
-      window.onnx = [...output.data];
-      window.groundTruth = exampleData.ground_truth.flat().flat().flat().flat().flat();
-      
-      console.log("Predicted:", window.onnx);
-      console.log("PyTorch:", window.pytorch);
-      console.log("Ground truth:", window.groundTruth);
+      console.log("Predicted:", onnx);
+      console.log("PyTorch:", pytorch);
+      console.log("Ground truth:", groundTruth);
 
       console.log("Values > 0.1:");
-      console.log("Predicted:", window.onnx.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
-      console.log("Pytorch:", window.pytorch.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
-      console.log("Ground truth:", window.groundTruth.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      console.log("Predicted:", onnx.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      console.log("Pytorch:", pytorch.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      console.log("Ground truth:", groundTruth.map((v, i) => v > 0.1 ? [v,i] : false).filter(a=>a).slice(0, 100));
+      
+      // Display the frames:
+      let inputFrames = [];
+      let outputFrames = [];
+      let outputData = [...output.data];
+      for(let i = 0; i < 10; i++) {
+        inputFrames.push(inputData.slice(i*64*64, (i+1)*64*64));
+      }
+      for(let i = 0; i < 10; i++) {
+        outputFrames.push(outputData.slice(i*64*64, (i+1)*64*64));
+      }
+
+      for(let frame of inputFrames) {
+        let rgba = frame.map(n => [Math.round(n*255), Math.round(n*255), Math.round(n*255), 255]);
+        let canvas = createCanvasFromRGBAData(rgba, 64, 64);
+        canvas.style.border = "3px solid blue";
+        document.body.appendChild(canvas);
+      }
+      for(let frame of outputFrames) {
+        let rgba = frame.map(n => [Math.round(n*255), Math.round(n*255), Math.round(n*255), 255]);
+        let canvas = createCanvasFromRGBAData(rgba, 64, 64);
+        canvas.style.border = "3px solid green";
+        document.body.appendChild(canvas);
+      }
     }
     
     
