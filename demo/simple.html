@@ -8,7 +8,7 @@
 <body>
   
   <p>Blue = input frames, green = output/predicted frames. See browser console for more data.</p>
-  <button onclick="start(); this.disabled=true;">start</button>
+  <button onclick="start(); this.disabled=true; this.innerHTML='loading... (see browser console)';">start</button>
   <p><a href="https://github.com/josephrocca/SimVP-web">github repo</a> - <a href="https://huggingface.co/rocca/simvp-web">huggingface repo</a></p>
   
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.13.1/dist/ort.js"></script>
