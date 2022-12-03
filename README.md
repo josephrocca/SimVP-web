@@ -10,7 +10,7 @@ Note that these examples are **severely** under-trained. They're just proof-of-c
 ## Training and Conversion:
 
 * Moving MNIST: https://colab.research.google.com/gist/josephrocca/80c4a9814621d228dfb3d262a26a0806
-* Your own custom video dataset: https://colab.research.google.com/gist/josephrocca/7be01186b14e07b5d54e80c245a35570
+* Train using your own custom video dataset: https://colab.research.google.com/gist/josephrocca/7be01186b14e07b5d54e80c245a35570
 
 ## Pre-trained & Converted Models:
 
