@@ -8,3 +8,10 @@
 ## Pre-trained & Converted Models:
 
 * https://huggingface.co/rocca/simvp-web
+
+## Demos:
+
+Note that these examples are **severely** under-trained. They're just proof-of-concepts to get the whole pipeline (from training to browser inference) working properly.
+
+ * Moving MNIST: https://josephrocca.github.io/SimVP-web/demo/simple.html
+ * Rise of Gru movie: https://josephrocca.github.io/SimVP-web/demo/rise-of-gru.html
