@@ -20,5 +20,6 @@ Note that these examples are probably under-trained. They're just proof-of-conce
 
 ---
 
-https://user-images.githubusercontent.com/1167575/205570247-79440270-646b-421e-8832-08654437084d.mp4
+
+https://user-images.githubusercontent.com/1167575/205601342-e10d328b-3b6a-45f3-927b-4f77140559a8.mp4
 
