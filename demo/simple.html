@@ -23,6 +23,7 @@
     if(self.crossOriginIsolated) { // needs to be cross-origin-isolated to use wasm threads. you need to serve this html file with these two headers: https://web.dev/coop-coep/
       ort.env.wasm.numThreads = navigator.hardwareConcurrency / 2;
     }
+    ort.env.wasm.proxy = true;
     
     async function start() {
       
