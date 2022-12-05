@@ -1,4 +1,4 @@
-[SimVP video prediction](https://github.com/chengtan9907/SimVPv2) using [ONNX's Wasm runtime](https://github.com/microsoft/onnxruntime/tree/main/js/web). You can use the notebook linked below to train your own video prediction model that runs in "real-time" in the browser. SimVP is really impressive given how fast it runs - see the results that compare to other methods [in the paper](https://arxiv.org/abs/2211.12509).
+[SimVP video prediction](https://github.com/chengtan9907/SimVPv2) using [ONNX's Wasm runtime](https://github.com/microsoft/onnxruntime/tree/main/js/web). You can use the notebook linked below to train your own video prediction model that runs in real-time in the browser. SimVP is really impressive given how fast it runs - see the results that compare to other methods [in the paper](https://arxiv.org/abs/2211.12509).
 
 ## Demos:
 
