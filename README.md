@@ -1,10 +1,11 @@
-[SimVP video prediction](https://github.com/chengtan9907/SimVPv2) using [ONNX's Wasm runtime](https://github.com/microsoft/onnxruntime/tree/main/js/web). You can use the notebook linked below to train your own video prediction model that runs in "real-time" in the browser. SimVP is really impressive and surprisingly performant - see the results [in the paper](https://arxiv.org/abs/2211.12509).
+[SimVP video prediction](https://github.com/chengtan9907/SimVPv2) using [ONNX's Wasm runtime](https://github.com/microsoft/onnxruntime/tree/main/js/web). You can use the notebook linked below to train your own video prediction model that runs in "real-time" in the browser. SimVP is really impressive given how fast it runs - see the results that compare to other methods [in the paper](https://arxiv.org/abs/2211.12509).
 
 ## Demos:
 
-Note that these examples are **severely** under-trained. They're just proof-of-concepts to get the whole pipeline (from training to browser inference) working properly.
+Note that these examples are probably under-trained. They're just proof-of-concepts to get the whole pipeline (from training to browser inference) working properly.
 
  * Various models (color): https://josephrocca.github.io/SimVP-web/demo/simple.html
+ * Same as above, but infinite/recursive generation: https://josephrocca.github.io/SimVP-web/demo/simple-infinite.html
  * Moving MNIST (greyscale): https://josephrocca.github.io/SimVP-web/demo/mmnist.html
 
 ## Training and Conversion:
