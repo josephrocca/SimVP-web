@@ -50,7 +50,7 @@
       let exampleData = JSON.parse(new TextDecoder().decode(decompressedData));
       
       // `exampleData` contains a batch of 16 frame sequences for `input`, `ground_truth`, and `pytorch_prediction`, where each sample is 10 frames long.
-      const batchI = 8; //Math.floor(Math.random()*exampleData.input.length);
+      const batchI = Math.floor(Math.random()*exampleData.input.length);
       let inputData = exampleData.input[batchI].flat().flat().flat().flat().flat().flat();
       console.log("Input data:", inputData);
       
