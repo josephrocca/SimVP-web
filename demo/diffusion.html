@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>SimVPv2 - ONNX Runtime Web</title>
+  <script src="./enable-threads.js"></script>
+</head>
+<body>
+  
+  <p>Blue = input frames, green = output/predicted frames. See browser console for more data.</p>
+  <select id="modelSelectEl">
+    <option value="pokemon_gold_diffusion_2/pokemon_gold_diffusion_2_epoch11_1.1mil-steps_quantized.onnx;pokemon_gold_diffusion_2/input_output_data.json.br;wasm">pokemon gold diffusion - 1.1mil steps (wasm)</option>
+    <option value="fortnite_diffusion_2/fortnite_diffusion_2_epoch8_1mil-steps_quantized.onnx;fortnite_diffusion_2/input_output_data.json.br;wasm">fortnite diffusion - 1mil steps (wasm)</option>
+    <option value="fortnite_diffusion_2/fortnite_diffusion_2_epoch8_1mil-steps.onnx;fortnite_diffusion_2/input_output_data.json.br;wasm">fortnite diffusion - 1mil steps (webgl)</option>
+    <option value="pokemon_gold_diffusion_2/pokemon_gold_diffusion_2_epoch5_500k-steps_quantized.onnx;pokemon_gold_diffusion_2/input_output_data.json.br;wasm">pokemon gold diffusion - 500k steps (wasm)</option>
+    <option value="pokemon_gold_diffusion_2/pokemon_gold_diffusion_2_epoch5_500k-steps.onnx;pokemon_gold_diffusion_2/input_output_data.json.br;wasm">pokemon gold diffusion - 500k steps (not quantized) (wasm)</option>
+    <option value="fortnite_diffusion_2/fortnite_diffusion_2_epoch4_516k-steps_quantized.onnx;fortnite_diffusion_2/input_output_data.json.br;wasm">fortnite diffusion - 516k steps (wasm)</option>
+    <option value="pokemon_gold_diffusion_2/pokemon_gold_diffusion_2_epoch1_100k-steps_quantized.onnx;pokemon_gold_diffusion_2/input_output_data.json.br;wasm">pokemon gold diffusion - 100k steps (wasm)</option>
+    <option value="fortnite_diffusion_2/fortnite_diffusion_2_epoch1_129k-steps_quantized.onnx;fortnite_diffusion_2/input_output_data.json.br;wasm">fortnite diffusion - 129k steps (wasm)</option>
+    
+  </select>
+  <!-- <div style="display:flex; margin:0.5rem 0;"><input id="randomNoiseEl" type="checkbox"> use random noise as initial input</div> -->
+  <button id="startBtn" onclick="start(); this.disabled=true; this.innerHTML='downloading model...';">start</button>
+  
+  <p><a href="https://github.com/josephrocca/SimVP-web">github repo</a> - <a href="https://huggingface.co/rocca/simvp-web">huggingface repo</a></p>
+  
+  <div id="frameCtn"></div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
+  <script>
+    if(self.crossOriginIsolated) { // needs to be cross-origin-isolated to use wasm threads. you need to serve this html file with these two headers: https://web.dev/coop-coep/
+      ort.env.wasm.numThreads = navigator.hardwareConcurrency / 2;
+    }
+    ort.env.wasm.proxy = true; // <-- run in a worker, not on main thread
+    
+    async function start() {
+      
+      console.log("Initializing...");
+      
+      let [modelPath, dataPath, onnxBackend] = modelSelectEl.value.split(";");
+      
+      let model = await ort.InferenceSession.create(`https://huggingface.co/rocca/simvp-web/resolve/main/onnx/${modelPath}`, { executionProviders: [onnxBackend] });
+      
+      let exampleDataBrotli = await fetch(`https://huggingface.co/rocca/simvp-web/resolve/main/onnx/${dataPath}`).then(r => r.arrayBuffer());
+      
+      let brotli = await import("https://unpkg.com/brotli-wasm@1.3.1/index.web.js").then(m => m.default);
+      let decompressedData = brotli.decompress(new Uint8Array(exampleDataBrotli));
+      let exampleData = JSON.parse(new TextDecoder().decode(decompressedData));
+      
+      // `exampleData` contains a batch of 16 frame sequences for `input`, `ground_truth`, and `pytorch_prediction`, where each sample is 10 frames long.
+      const batchI = 8; //Math.floor(Math.random()*exampleData.input.length);
+      let inputData = exampleData.input[batchI].flat().flat().flat().flat().flat().flat();
+      console.log("Input data:", inputData);
+      
+      const frameSize = 64; // assumes square
+      
+      // Use random noise as initial input:
+      // if(randomNoiseEl.checked) {
+      //   inputData = new Array(1*10*3*64*64).fill(0).map(_ => Math.random());
+      // }
+      
+      displayFrameRow(inputData, frameSize, "blue");
+      
+      startBtn.innerHTML = "stop";
+      startBtn.onclick = () => window.STOP=true;
+      startBtn.disabled = false;
+      
+      while(1) {
+        if(window.STOP) return;
+        
+        console.log("Starting inference...");
+        let startTime = Date.now();
+        let results = await model.run({"input": new ort.Tensor('float32', inputData, [1,10,3,64,64])});
+        let output = results["output"]; // float32[1,10,3,64,64]
+        timePer10Frames = Date.now()-startTime;
+        console.log(`Inference took ${timePer10Frames}ms`);
+
+        let pytorch = exampleData.pytorch_prediction[batchI].flat().flat().flat().flat().flat();
+        let onnx = [...output.data];
+        let groundTruth = exampleData.ground_truth[batchI].flat().flat().flat().flat().flat();
+
+        console.log("Predicted:", onnx);
+        
+        // Display the output frames:
+        const numOutputFrames = 10;
+        let outputFrames = [];
+        let outputData = [...output.data];
+
+        if(outputData.length !== 10*3*64*64) console.error("outputData.length !== 10*3*64*64");
+
+        for(let i = 0; i < numOutputFrames; i++) {
+          let s = frameSize*frameSize;
+          let r = outputData.slice(3*i*s + s*0, 3*i*s + s*1);
+          let g = outputData.slice(3*i*s + s*1, 3*i*s + s*2);
+          let b = outputData.slice(3*i*s + s*2, 3*i*s + s*3);
+          outputFrames.push({r,g,b});
+        }
+        
+        let rgbFrames = [];
+        let ctn = document.createElement("div");
+        ctn.classList.add("canvas-ctn");
+        for(let frame of outputFrames) {
+          let {r, g, b} = frame;
+          let rgba = [];
+          for(let i = 0; i < frameSize*frameSize; i++) {
+            rgba.push([Math.round(r[i]*255), Math.round(g[i]*255), Math.round(b[i]*255), 255])
+          }
+          rgbFrames.push(rgba);
+          let canvas = createCanvasFromRGBAData(rgba, 64, 64);
+          canvas.style.border = "3px solid green";
+          ctn.appendChild(canvas);
+        }
+        document.body.appendChild(ctn);
+        
+        // this is for the "video" - we only need the first rgbaFrame
+        frameQueue.unshift(rgbFrames[0]);
+        
+        inputData = outputData; // feed output back into input
+        
+        // "shift" all frames down one and duplicate last frame to the end (it'll get ~completely "noised" in the next code block anyway, but it's important to match the training data as closely as possible, and last frame is a good approximation)
+        inputData = inputData.slice(3*frameSize*frameSize);
+        for(let i = 0; i < 3*frameSize*frameSize; i++) {
+          inputData.push(inputData[(numOutputFrames-2)*3*frameSize*frameSize + i]);
+        }
+        
+        // Add noise to this new inputData:
+        for(let j = 0; j < inputData.length; j++) {
+          let frameI = Math.floor(j/(3*64*64));
+          for(let k = 0; k < frameI+1; k++) { // apply this randomization once for first frame, twice for second, etc.
+            inputData[j] += gaussianRandom(0, (7/255)*(frameI+1)); // the python dataloader code is on 0-255 values, so we divide 7 by 255
+            if(inputData[j] > 1) inputData[j] = 1;
+            if(inputData[j] < 0) inputData[j] = 0;
+          }
+        }
+        
+        displayFrameRow(inputData, frameSize, "blue");
+        
+        while(document.querySelectorAll(".canvas-ctn").length > 100) {
+          document.querySelectorAll(".canvas-ctn")[0].remove();
+        }
+      }
+    }
+    
+    let frameQueue = [];
+    let timePer10Frames = 2000; //ms
+    (async function() {
+      while(1) {
+        while(frameQueue.length === 0) await new Promise(r => setTimeout(r, 1));
+        await new Promise(r => setTimeout(r, timePer10Frames/10));
+        let rgba = frameQueue.pop();
+        let canvas = createCanvasFromRGBAData(rgba, 64, 64);
+        canvas.style.cssText = "border:3px solid green; height:256px;";
+        frameCtn.innerHTML = "";
+        frameCtn.appendChild(canvas);
+      }
+    })();
+    
+    
+    function gaussianRandom(mean, stdev) {
+      // Generate a random number from a normal distribution
+      // using the Box-Muller transform
+      let u1 = Math.random();
+      let u2 = Math.random();
+      let z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+
+      // Transform the random number to the desired mean and standard deviation
+      return z * stdev + mean;
+    }
+    
+    
+    function displayFrameRow(data, frameSize, borderColor) {
+      let frames = [];
+      for(let i = 0; i < 10; i++) {
+        let s = frameSize*frameSize;
+        let r = data.slice(3*i*s + s*0, 3*i*s + s*1);
+        let g = data.slice(3*i*s + s*1, 3*i*s + s*2);
+        let b = data.slice(3*i*s + s*2, 3*i*s + s*3);
+        frames.push({r,g,b});
+      }
+      
+      let ctn = document.createElement("div");
+      ctn.classList.add("canvas-ctn");
+      for(let frame of frames) {
+        let {r, g, b} = frame;
+        let rgba = [];
+        for(let i = 0; i < frameSize*frameSize; i++) {
+          rgba.push([Math.round(r[i]*255), Math.round(g[i]*255), Math.round(b[i]*255), 255])
+        }
+        let canvas = createCanvasFromRGBAData(rgba, 64, 64);
+        canvas.style.border = `3px solid ${borderColor}`;
+        ctn.appendChild(canvas);
+      }
+      document.body.appendChild(ctn);
+    }
+    
+    
+    function createCanvasFromRGBAData(data, width, height) {
+      // `data` should look something like [[123,32,40,255], [3,233,42,120], ...]
+      if(width*height !== data.length) throw new Error("width*height should equal data.length");
+      let canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      let ctx = canvas.getContext("2d");
+      let imgData = ctx.createImageData(width, height);
+      for(let i = 0; i < data.length; i++) {
+        imgData.data[i*4+0] = data[i][0];
+        imgData.data[i*4+1] = data[i][1];
+        imgData.data[i*4+2] = data[i][2];
+        imgData.data[i*4+3] = data[i][3];
+      }
+      ctx.putImageData(imgData, 0, 0);
+      return canvas;
+    }
+  </script>
+</body>
+</html>
