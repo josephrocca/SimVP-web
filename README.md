@@ -17,6 +17,10 @@ Note that these examples are probably under-trained. They're just proof-of-conce
 
 * https://huggingface.co/rocca/simvp-web
 
+## Diffusion Experiments:
+
+* https://colab.research.google.com/gist/josephrocca/eccbb3e5ff92b8326d7e2627827b6323/simvp2-diffusion.ipynb
+* https://josephrocca.github.io/SimVP-web/demo/diffusion.html
 
 ---
 
